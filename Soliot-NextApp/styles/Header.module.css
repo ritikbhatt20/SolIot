@@ -1,0 +1,54 @@
+/* Header.module.css */
+
+/* Style for header wrapper */
+.wrapper {
+    background-color: #fcfdfe;
+    padding: 20px; /* Add padding */
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+/* Title style */
+.title {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #060606;
+}
+
+/* Navigation links style */
+.navLinks {
+    display: flex;
+    gap: 20px; /* Add gap between links */
+}
+
+/* Navigation link style */
+.navLinks a {
+    font-size: 1rem;
+    text-decoration: none;
+    color: #464c5a;
+    transition: color 0.3s ease; /* Add transition effect */
+}
+
+/* Navigation link hover effect */
+.navLinks a:hover {
+    color: #f2505e;
+}
+
+/* Wallet button style */
+.walletButton {
+    font-size: 1rem;
+    cursor: pointer;
+    border: 1px solid #464c5a;
+    background-color: #3e4754;
+    border-radius: 1.5rem;
+    padding: 10px 20px; /* Add padding */
+    color: #f0f4fa;
+    font-weight: bold;
+    transition: background-color 0.3s ease; /* Add transition effect */
+}
+
+/* Wallet button hover effect */
+.walletButton:hover {
+    background-color: #464c5a;
+}
