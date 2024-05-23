@@ -16,7 +16,7 @@ use std::str::FromStr;
 use std::path::Path;
 use sha2::{Sha256, Digest};
 
-const PROGRAM_ID: &str = "Bdmj1b2bfB6x6ZGwWT5LaLzShvsQ9Q5LYGQUXgaKoTCf";
+const PROGRAM_ID: &str = "6ARFKMRmCWx9tcEiz1DWrZgJoWa5ErbWvcn4pBYt9J8C";
 const REGISTRY_SEED: &[u8] = b"registry";
 const NODE_SEED: &[u8] = b"node";
 const TOKEN_MINT_ADDRESS: &str = "FPwdoxbJjhDGbWWAkK1vwqtvHr5EqbwkgWBaVB9UJ6Rx";
@@ -177,10 +177,9 @@ async fn update_node(
     bytes: u64,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let program_id = Pubkey::from_str(PROGRAM_ID)?;
-    let (node_pda, node_bump) = Pubkey::find_program_address(&[NODE_SEED, keypair.pubkey().as_ref()], &program_id);
+    let (node_pda, _node_bump) = Pubkey::find_program_address(&[NODE_SEED, keypair.pubkey().as_ref()], &program_id);
     let token_mint_pubkey = Pubkey::from_str(TOKEN_MINT_ADDRESS)?;
     let node_token_account = get_associated_token_address(&keypair.pubkey(), &token_mint_pubkey);
-    let mint_authority = keypair.pubkey(); // Assuming the mint authority is the keypair's pubkey
 
     let mut data = Vec::new();
     data.extend_from_slice(&get_discriminator("update"));
@@ -195,13 +194,11 @@ async fn update_node(
             solana_sdk::instruction::AccountMeta::new_readonly(keypair.pubkey(), true), // Authority (Signer)
             solana_sdk::instruction::AccountMeta::new(token_mint_pubkey, false), // Mint
             solana_sdk::instruction::AccountMeta::new(node_token_account, false), // Node Token Account
-            solana_sdk::instruction::AccountMeta::new(mint_authority, false), // Mint Authority
+            solana_sdk::instruction::AccountMeta::new_readonly(keypair.pubkey(), false), // Mint Authority (Not a signer, not writable)
             solana_sdk::instruction::AccountMeta::new_readonly(TOKEN_PROGRAM_ID, false), // Token Program
         ],
         data,
     };
-
-    println!("Instruction: {:?}", instruction);
 
     send_transaction(client, keypair, vec![instruction], &[]).await?;
     println!("Node updated with uptime: {}, heartbeat: {}, bytes: {}", uptime, heartbeat, bytes);
