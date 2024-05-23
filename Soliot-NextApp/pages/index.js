@@ -39,9 +39,9 @@ export default function Home() {
           <AppProvider>
             <Header />
             <div className={style.container}>
-              <InitializeRegistry />
-              <RegisterNode/>
-              <UpdateNode/>
+              {/* <InitializeRegistry />  */}
+              {/* <RegisterNode/> */}
+              {/* <UpdateNode/> */}
               <NodeStatusDetails/>
             </div>
           </AppProvider>

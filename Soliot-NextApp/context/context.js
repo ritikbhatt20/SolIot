@@ -60,6 +60,8 @@ export const AppProvider = ({ children }) => {
         uptime: nodeStatusAccount.account.uptime.toString(),
         heartbeat: nodeStatusAccount.account.heartbeat.toString(),
         bytes: nodeStatusAccount.account.bytes.toString(),
+        lastUpdateSlot: nodeStatusAccount.account.lastUpdateSlot.toString(),
+        tokenEarnings: nodeStatusAccount.account.tokenEarnings.toString(),
       }));
       setNodeStatus(formattedNodeStatusList);
     } catch (error) {

@@ -26,6 +26,8 @@ const NodeStatusDetails = () => {
             <th>Uptime</th>
             <th>Heartbeat</th>
             <th>Bytes</th>
+            <th>Last Update Slot</th>
+            <th>Token Earnings</th>
           </tr>
         </thead>
         <tbody>

@@ -3,7 +3,7 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import { shortenPk } from "../utils/helper";
 
 const NodeStatusRow = ({ node }) => {
-  const { nodePubkey, ip, uptime, heartbeat, bytes } = node;
+  const { nodePubkey, ip, uptime, heartbeat, bytes, lastUpdateSlot, tokenEarnings } = node;
 
   return (
     <tr>
@@ -12,6 +12,8 @@ const NodeStatusRow = ({ node }) => {
       <td>{uptime}</td>
       <td>{heartbeat}</td>
       <td>{bytes}</td>
+      <td>{lastUpdateSlot}</td>
+      <td>{tokenEarnings}</td>
     </tr>
   );
 };

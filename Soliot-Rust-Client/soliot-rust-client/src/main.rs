@@ -16,7 +16,7 @@ use std::str::FromStr;
 use std::path::Path;
 use sha2::{Sha256, Digest};
 
-const PROGRAM_ID: &str = "RCw9Jvc35yuko59KzBtmSfRkZrd6aPWzioEyioXyqmk";
+const PROGRAM_ID: &str = "Bdmj1b2bfB6x6ZGwWT5LaLzShvsQ9Q5LYGQUXgaKoTCf";
 const REGISTRY_SEED: &[u8] = b"registry";
 const NODE_SEED: &[u8] = b"node";
 const TOKEN_MINT_ADDRESS: &str = "FPwdoxbJjhDGbWWAkK1vwqtvHr5EqbwkgWBaVB9UJ6Rx";
@@ -200,6 +200,8 @@ async fn update_node(
         ],
         data,
     };
+
+    println!("Instruction: {:?}", instruction);
 
     send_transaction(client, keypair, vec![instruction], &[]).await?;
     println!("Node updated with uptime: {}, heartbeat: {}, bytes: {}", uptime, heartbeat, bytes);
