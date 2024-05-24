@@ -45,3 +45,88 @@ This project allows users to manage IoT nodes using the Solana blockchain. It in
    ```sh
    sh -c "$(curl -sSfL https://release.solana.com/v1.8.0/install)"
    cargo install --git https://github.com/project-serum/anchor --tag v0.18.0 anchor-cli --locked
+
+2. **Build and Deploy the Smart Contract**:
+    ```sh
+    cd solana-program
+    anchor build
+    anchor deploy
+3. **Obtain Program ID**:
+    The deployment step will output the Program ID. Copy this ID to use in your client and front-end code.
+
+### Rust Client
+
+1. **Set Up the Rust Client**:
+
+    ```sh
+    cd rust-client
+    cargo build
+
+2. **Configure the Rust Client**:
+    Update the config.json with your wallet path, cluster URL, and Program ID.
+
+### Next.js Application
+
+1. **Install Dependencies**:
+
+    ```sh
+    cd nextjs-app
+    yarn install
+    npm install
+
+2. **Configure the Application**:
+   Update the constants.js file with your Program ID and Token Mint Address.
+
+3. **Run the Application**:
+
+    ```sh
+    yarn dev
+    or
+    npm run dev
+   
+### Usage
+
+## Initialize Registry
+
+1. **Initialize the Registry**:
+   Use the Next.js application to initialize the registry by clicking on the "Initialize Registry" button.
+
+## Register Node
+
+2. **Register a Node**:
+   Use the Next.js application to register a new node by providing the necessary details such as IP address.
+   
+## Update Node
+
+3. **Update a Node**:
+   Use the Next.js application to update node details such as uptime, heartbeat, and bytes.
+   
+### Project Structure
+
+```sh
+.
+├── README.md
+├── nextjs-app
+│   ├── public
+│   ├── src
+│   │   ├── pages
+│   │   ├── components
+│   │   ├── utils
+│   │   └── styles
+│   ├── constants.js
+│   ├── next.config.js
+│   └── ...
+├── rust-client
+│   ├── src
+│   ├── config.json
+│   ├── Cargo.toml
+│   └── ...
+└── solana-program
+    ├── src
+    │   ├── lib.rs
+    │   ├── processor.rs
+    │   └── state.rs
+    ├── migrations
+    ├── tests
+    ├── Anchor.toml
+    └── ...
