@@ -66,7 +66,11 @@ This project allows users to manage IoT nodes using the Solana blockchain. It in
     cargo build
 
 2. **Configure the Rust Client**:
-    Update the config.json with your wallet path, cluster URL, and Program ID.
+    Update the keypair path of your wallet and mint authority, and Program ID.
+
+3. **Run the Rust Client code**:
+   ```sh
+   cargo run
 
 ### Next.js Application
 
