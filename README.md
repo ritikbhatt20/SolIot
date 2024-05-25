@@ -43,8 +43,11 @@ This project allows users to manage IoT nodes using the Solana blockchain. It in
 
 1. **Install Solana CLI and Anchor CLI**:
    ```sh
-   sh -c "$(curl -sSfL https://release.solana.com/v1.8.0/install)"
-   cargo install --git https://github.com/project-serum/anchor --tag v0.18.0 anchor-cli --locked
+   sh -c "$(curl -sSfL https://release.solana.com/v1.18.14/install)"
+   cargo install --git https://github.com/coral-xyz/anchor avm --locked --force
+   avm install latest
+   avm use latest
+   anchor --version
 
 2. **Build and Deploy the Smart Contract**:
     ```sh
