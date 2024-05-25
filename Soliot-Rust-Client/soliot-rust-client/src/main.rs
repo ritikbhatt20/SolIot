@@ -15,6 +15,7 @@ use tokio::time::{sleep, Duration};
 use std::str::FromStr;
 use std::path::Path;
 use sha2::{Sha256, Digest};
+use std::io::{self, Write};
 
 const PROGRAM_ID: &str = "9MnKKfAhgYyWJXHuYTBDUWLvM5fRLnS9QFMx1A6XBRWR";
 const REGISTRY_SEED: &[u8] = b"registry";
@@ -36,19 +37,67 @@ async fn main() {
         eprintln!("Failed to initialize registry: {:?}", e);
     }
 
-    let ip = [192, 168, 1, 1];
-    if let Err(e) = register_node_if_needed(&client, &keypair, ip).await {
-        eprintln!("Failed to register node: {:?}", e);
+    let node_registered = check_node_registration(&client, &keypair).await;
+
+    if !node_registered {
+        println!("Enter the IP address (format: x.x.x.x):");
+        let ip = read_ip();
+
+        if let Err(e) = register_node_if_needed(&client, &keypair, ip).await {
+            eprintln!("Failed to register node: {:?}", e);
+        }
+    }
+    else {
+        println!("Node already registered");
     }
 
     loop {
-        let uptime = 100;
-        let heartbeat = 5;
-        let bytes = 1024;
+        println!("Enter uptime:");
+        let uptime = read_u64();
+
+        println!("Enter heartbeat:");
+        let heartbeat = read_u64();
+
+        println!("Enter bytes:");
+        let bytes = read_u64();
+
         if let Err(e) = update_node(&client, &keypair, uptime, heartbeat, bytes).await {
             eprintln!("Failed to update node: {:?}", e);
         }
         sleep(Duration::from_secs(600)).await;
+    }
+}
+
+async fn check_node_registration(client: &RpcClient, keypair: &Keypair) -> bool {
+    let program_id = Pubkey::from_str(PROGRAM_ID).expect("Failed to parse program ID");
+    let (node_pda, _node_bump) = Pubkey::find_program_address(&[NODE_SEED, keypair.pubkey().as_ref()], &program_id);
+    client.get_account(&node_pda).is_ok()
+}
+
+fn read_ip() -> [u8; 4] {
+    loop {
+        let mut input = String::new();
+        io::stdin().read_line(&mut input).expect("Failed to read line");
+        let parts: Vec<&str> = input.trim().split('.').collect();
+        if parts.len() == 4 {
+            if let Ok(ip) = parts.iter().map(|&part| part.parse::<u8>()).collect::<Result<Vec<u8>, _>>() {
+                if ip.len() == 4 {
+                    return [ip[0], ip[1], ip[2], ip[3]];
+                }
+            }
+        }
+        println!("Invalid IP address format. Please enter in the format x.x.x.x:");
+    }
+}
+
+fn read_u64() -> u64 {
+    loop {
+        let mut input = String::new();
+        io::stdin().read_line(&mut input).expect("Failed to read line");
+        if let Ok(value) = input.trim().parse::<u64>() {
+            return value;
+        }
+        println!("Invalid input. Please enter a valid number:");
     }
 }
 
