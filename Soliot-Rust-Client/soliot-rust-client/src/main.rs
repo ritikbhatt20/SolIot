@@ -16,7 +16,7 @@ use std::str::FromStr;
 use std::path::Path;
 use sha2::{Sha256, Digest};
 
-const PROGRAM_ID: &str = "6ARFKMRmCWx9tcEiz1DWrZgJoWa5ErbWvcn4pBYt9J8C";
+const PROGRAM_ID: &str = "9MnKKfAhgYyWJXHuYTBDUWLvM5fRLnS9QFMx1A6XBRWR";
 const REGISTRY_SEED: &[u8] = b"registry";
 const NODE_SEED: &[u8] = b"node";
 const TOKEN_MINT_ADDRESS: &str = "FPwdoxbJjhDGbWWAkK1vwqtvHr5EqbwkgWBaVB9UJ6Rx";
@@ -32,15 +32,13 @@ async fn main() {
     let mint_authority_path = Path::new("/home/ritikbhatt020/.config/solana/id.json");
     let mint_authority = read_keypair_file(mint_authority_path).expect("Failed to read mint authority keypair file");
 
-    if let Err(e) = initialize_registry(&client, &keypair, &mint_authority).await {
+    if let Err(e) = initialize_registry_if_needed(&client, &keypair, &mint_authority).await {
         eprintln!("Failed to initialize registry: {:?}", e);
-        return;
     }
 
     let ip = [192, 168, 1, 1];
-    if let Err(e) = register_node(&client, &keypair, ip).await {
+    if let Err(e) = register_node_if_needed(&client, &keypair, ip).await {
         eprintln!("Failed to register node: {:?}", e);
-        return;
     }
 
     loop {
@@ -63,15 +61,16 @@ fn get_discriminator(instruction_name: &str) -> [u8; 8] {
     discriminator
 }
 
-async fn initialize_registry(client: &RpcClient, keypair: &Keypair, _mint_authority: &Keypair) -> Result<(), Box<dyn std::error::Error>> {
+async fn initialize_registry_if_needed(client: &RpcClient, keypair: &Keypair, _mint_authority: &Keypair) -> Result<(), Box<dyn std::error::Error>> {
     let program_id = Pubkey::from_str(PROGRAM_ID)?;
     let (registry_pda, _bump) = Pubkey::find_program_address(&[REGISTRY_SEED], &program_id);
 
-    println!("Registry PDA: {}", registry_pda);
-    println!("Mint Address: {}", TOKEN_MINT_ADDRESS);
+    if client.get_account(&registry_pda).is_ok() {
+        println!("Registry already initialized");
+        return Ok(());
+    }
 
     let mint_pubkey = Pubkey::from_str(TOKEN_MINT_ADDRESS)?;
-
     let rent_pubkey = solana_sdk::sysvar::rent::id();
 
     let mut data = Vec::new();
@@ -90,8 +89,6 @@ async fn initialize_registry(client: &RpcClient, keypair: &Keypair, _mint_author
         data,
     };
 
-    println!("Instruction: {:?}", instruction);
-
     send_transaction(client, keypair, vec![instruction], &[]).await?;
     println!("Registry initialized");
     Ok(())
@@ -108,10 +105,10 @@ async fn create_associated_token_account_if_not_exists(
 
     if account_info.is_err() {
         let create_ata_ix = create_associated_token_account(
-            &keypair.pubkey(),  // Payer
-            owner,  // Owner
+            &keypair.pubkey(),
+            owner,
             mint,
-            &TOKEN_PROGRAM_ID,  // Token program ID
+            &TOKEN_PROGRAM_ID,
         );
         let recent_blockhash = client.get_latest_blockhash()?;
         let tx = Transaction::new_signed_with_payer(
@@ -128,18 +125,19 @@ async fn create_associated_token_account_if_not_exists(
     Ok(())
 }
 
-async fn register_node(client: &RpcClient, keypair: &Keypair, ip: [u8; 4]) -> Result<(), Box<dyn std::error::Error>> {
+async fn register_node_if_needed(client: &RpcClient, keypair: &Keypair, ip: [u8; 4]) -> Result<(), Box<dyn std::error::Error>> {
     let program_id = Pubkey::from_str(PROGRAM_ID)?;
     let (node_pda, _node_bump) = Pubkey::find_program_address(&[NODE_SEED, keypair.pubkey().as_ref()], &program_id);
+
+    if client.get_account(&node_pda).is_ok() {
+        println!("Node already registered");
+        return Ok(());
+    }
+
     let (registry_pda, _registry_bump) = Pubkey::find_program_address(&[REGISTRY_SEED], &program_id);
     let token_mint_pubkey = Pubkey::from_str(TOKEN_MINT_ADDRESS)?;
     let node_token_account = get_associated_token_address(&keypair.pubkey(), &token_mint_pubkey);
 
-    println!("Node PDA: {}", node_pda);
-    println!("Registry PDA: {}", registry_pda);
-    println!("Node Token Account: {}", node_token_account);
-
-    // Ensure the associated token account exists
     create_associated_token_account_if_not_exists(client, keypair, &keypair.pubkey(), &token_mint_pubkey).await?;
 
     let mut data = Vec::new();
@@ -161,8 +159,6 @@ async fn register_node(client: &RpcClient, keypair: &Keypair, ip: [u8; 4]) -> Re
         ],
         data,
     };
-
-    println!("Instruction: {:?}", instruction);
 
     send_transaction(client, keypair, vec![instruction], &[]).await?;
     println!("Node registered with IP: {:?}", ip);
@@ -204,7 +200,6 @@ async fn update_node(
     println!("Node updated with uptime: {}, heartbeat: {}, bytes: {}", uptime, heartbeat, bytes);
     Ok(())
 }
-
 
 async fn send_transaction(
     client: &RpcClient,
