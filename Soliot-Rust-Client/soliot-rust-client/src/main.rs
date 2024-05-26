@@ -1,10 +1,11 @@
+use dotenv::dotenv;
+use std::env;
 use solana_client::rpc_client::RpcClient;
 use solana_sdk::{
     instruction::Instruction,
     pubkey::Pubkey,
     signature::{read_keypair_file, Keypair, Signer},
     transaction::Transaction,
-    system_program,
 };
 use spl_associated_token_account::{
     get_associated_token_address,
@@ -15,39 +16,46 @@ use tokio::time::{sleep, Duration};
 use std::str::FromStr;
 use std::path::Path;
 use sha2::{Sha256, Digest};
-use std::io::{self, Write};
+use std::io;
 
-const PROGRAM_ID: &str = "9MnKKfAhgYyWJXHuYTBDUWLvM5fRLnS9QFMx1A6XBRWR";
 const REGISTRY_SEED: &[u8] = b"registry";
 const NODE_SEED: &[u8] = b"node";
-const TOKEN_MINT_ADDRESS: &str = "FPwdoxbJjhDGbWWAkK1vwqtvHr5EqbwkgWBaVB9UJ6Rx";
 
 #[tokio::main]
 async fn main() {
-    let rpc_url = "https://api.devnet.solana.com";
+    dotenv().ok();  // Load environment variables from .env file
+
+    let rpc_url = env::var("RPC_URL").expect("RPC_URL must be set");
     let client = RpcClient::new(rpc_url);
 
-    let keypair_path = Path::new("/home/ritikbhatt020/.config/solana/id.json");
+    let keypair_path_str = env::var("KEYPAIR_PATH").expect("KEYPAIR_PATH must be set");
+    let keypair_path = Path::new(&keypair_path_str);
     let keypair = read_keypair_file(keypair_path).expect("Failed to read keypair file");
 
-    let mint_authority_path = Path::new("/home/ritikbhatt020/.config/solana/id.json");
+    let mint_authority_path_str = env::var("MINT_AUTHORITY_PATH").expect("MINT_AUTHORITY_PATH must be set");
+    let mint_authority_path = Path::new(&mint_authority_path_str);
     let mint_authority = read_keypair_file(mint_authority_path).expect("Failed to read mint authority keypair file");
 
-    if let Err(e) = initialize_registry_if_needed(&client, &keypair, &mint_authority).await {
+    let program_id_str = env::var("PROGRAM_ID").expect("PROGRAM_ID must be set");
+    let program_id = Pubkey::from_str(&program_id_str).expect("Invalid PROGRAM_ID");
+    
+    let token_mint_address_str = env::var("TOKEN_MINT_ADDRESS").expect("TOKEN_MINT_ADDRESS must be set");
+    let token_mint_address = Pubkey::from_str(&token_mint_address_str).expect("Invalid TOKEN_MINT_ADDRESS");
+
+    if let Err(e) = initialize_registry_if_needed(&client, &keypair, &mint_authority, program_id, token_mint_address).await {
         eprintln!("Failed to initialize registry: {:?}", e);
     }
 
-    let node_registered = check_node_registration(&client, &keypair).await;
+    let node_registered = check_node_registration(&client, &keypair, program_id).await;
 
     if !node_registered {
         println!("Enter the IP address (format: x.x.x.x):");
         let ip = read_ip();
 
-        if let Err(e) = register_node_if_needed(&client, &keypair, ip).await {
+        if let Err(e) = register_node_if_needed(&client, &keypair, ip, program_id, token_mint_address).await {
             eprintln!("Failed to register node: {:?}", e);
         }
-    }
-    else {
+    } else {
         println!("Node already registered");
     }
 
@@ -61,15 +69,14 @@ async fn main() {
         println!("Enter bytes:");
         let bytes = read_u64();
 
-        if let Err(e) = update_node(&client, &keypair, uptime, heartbeat, bytes).await {
+        if let Err(e) = update_node(&client, &keypair, uptime, heartbeat, bytes, program_id, token_mint_address).await {
             eprintln!("Failed to update node: {:?}", e);
         }
         sleep(Duration::from_secs(600)).await;
     }
 }
 
-async fn check_node_registration(client: &RpcClient, keypair: &Keypair) -> bool {
-    let program_id = Pubkey::from_str(PROGRAM_ID).expect("Failed to parse program ID");
+async fn check_node_registration(client: &RpcClient, keypair: &Keypair, program_id: Pubkey) -> bool {
     let (node_pda, _node_bump) = Pubkey::find_program_address(&[NODE_SEED, keypair.pubkey().as_ref()], &program_id);
     client.get_account(&node_pda).is_ok()
 }
@@ -110,8 +117,7 @@ fn get_discriminator(instruction_name: &str) -> [u8; 8] {
     discriminator
 }
 
-async fn initialize_registry_if_needed(client: &RpcClient, keypair: &Keypair, _mint_authority: &Keypair) -> Result<(), Box<dyn std::error::Error>> {
-    let program_id = Pubkey::from_str(PROGRAM_ID)?;
+async fn initialize_registry_if_needed(client: &RpcClient, keypair: &Keypair, _mint_authority: &Keypair, program_id: Pubkey, token_mint_address: Pubkey) -> Result<(), Box<dyn std::error::Error>> {
     let (registry_pda, _bump) = Pubkey::find_program_address(&[REGISTRY_SEED], &program_id);
 
     if client.get_account(&registry_pda).is_ok() {
@@ -119,7 +125,6 @@ async fn initialize_registry_if_needed(client: &RpcClient, keypair: &Keypair, _m
         return Ok(());
     }
 
-    let mint_pubkey = Pubkey::from_str(TOKEN_MINT_ADDRESS)?;
     let rent_pubkey = solana_sdk::sysvar::rent::id();
 
     let mut data = Vec::new();
@@ -130,7 +135,7 @@ async fn initialize_registry_if_needed(client: &RpcClient, keypair: &Keypair, _m
         accounts: vec![
             solana_sdk::instruction::AccountMeta::new(registry_pda, false),
             solana_sdk::instruction::AccountMeta::new(keypair.pubkey(), true),
-            solana_sdk::instruction::AccountMeta::new_readonly(mint_pubkey, false),
+            solana_sdk::instruction::AccountMeta::new_readonly(token_mint_address, false),
             solana_sdk::instruction::AccountMeta::new_readonly(solana_sdk::system_program::id(), false),
             solana_sdk::instruction::AccountMeta::new_readonly(spl_token::id(), false),
             solana_sdk::instruction::AccountMeta::new_readonly(rent_pubkey, false),
@@ -174,8 +179,7 @@ async fn create_associated_token_account_if_not_exists(
     Ok(())
 }
 
-async fn register_node_if_needed(client: &RpcClient, keypair: &Keypair, ip: [u8; 4]) -> Result<(), Box<dyn std::error::Error>> {
-    let program_id = Pubkey::from_str(PROGRAM_ID)?;
+async fn register_node_if_needed(client: &RpcClient, keypair: &Keypair, ip: [u8; 4], program_id: Pubkey, token_mint_address: Pubkey) -> Result<(), Box<dyn std::error::Error>> {
     let (node_pda, _node_bump) = Pubkey::find_program_address(&[NODE_SEED, keypair.pubkey().as_ref()], &program_id);
 
     if client.get_account(&node_pda).is_ok() {
@@ -184,10 +188,9 @@ async fn register_node_if_needed(client: &RpcClient, keypair: &Keypair, ip: [u8;
     }
 
     let (registry_pda, _registry_bump) = Pubkey::find_program_address(&[REGISTRY_SEED], &program_id);
-    let token_mint_pubkey = Pubkey::from_str(TOKEN_MINT_ADDRESS)?;
-    let node_token_account = get_associated_token_address(&keypair.pubkey(), &token_mint_pubkey);
+    let node_token_account = get_associated_token_address(&keypair.pubkey(), &token_mint_address);
 
-    create_associated_token_account_if_not_exists(client, keypair, &keypair.pubkey(), &token_mint_pubkey).await?;
+    create_associated_token_account_if_not_exists(client, keypair, &keypair.pubkey(), &token_mint_address).await?;
 
     let mut data = Vec::new();
     data.extend_from_slice(&get_discriminator("register"));
@@ -200,8 +203,8 @@ async fn register_node_if_needed(client: &RpcClient, keypair: &Keypair, ip: [u8;
             solana_sdk::instruction::AccountMeta::new(keypair.pubkey(), true),
             solana_sdk::instruction::AccountMeta::new(registry_pda, false),
             solana_sdk::instruction::AccountMeta::new(node_token_account, false),
-            solana_sdk::instruction::AccountMeta::new_readonly(token_mint_pubkey, false),
-            solana_sdk::instruction::AccountMeta::new_readonly(system_program::id(), false),
+            solana_sdk::instruction::AccountMeta::new_readonly(token_mint_address, false),
+            solana_sdk::instruction::AccountMeta::new_readonly(solana_sdk::system_program::id(), false),
             solana_sdk::instruction::AccountMeta::new_readonly(TOKEN_PROGRAM_ID, false),
             solana_sdk::instruction::AccountMeta::new_readonly(spl_associated_token_account::id(), false),
             solana_sdk::instruction::AccountMeta::new_readonly(solana_sdk::sysvar::rent::id(), false),
@@ -220,11 +223,11 @@ async fn update_node(
     uptime: u64,
     heartbeat: u64,
     bytes: u64,
+    program_id: Pubkey,
+    token_mint_address: Pubkey,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let program_id = Pubkey::from_str(PROGRAM_ID)?;
     let (node_pda, _node_bump) = Pubkey::find_program_address(&[NODE_SEED, keypair.pubkey().as_ref()], &program_id);
-    let token_mint_pubkey = Pubkey::from_str(TOKEN_MINT_ADDRESS)?;
-    let node_token_account = get_associated_token_address(&keypair.pubkey(), &token_mint_pubkey);
+    let node_token_account = get_associated_token_address(&keypair.pubkey(), &token_mint_address);
 
     let mut data = Vec::new();
     data.extend_from_slice(&get_discriminator("update"));
@@ -237,7 +240,7 @@ async fn update_node(
         accounts: vec![
             solana_sdk::instruction::AccountMeta::new(node_pda, false), // Node PDA
             solana_sdk::instruction::AccountMeta::new_readonly(keypair.pubkey(), true), // Authority (Signer)
-            solana_sdk::instruction::AccountMeta::new(token_mint_pubkey, false), // Mint
+            solana_sdk::instruction::AccountMeta::new(token_mint_address, false), // Mint
             solana_sdk::instruction::AccountMeta::new(node_token_account, false), // Node Token Account
             solana_sdk::instruction::AccountMeta::new_readonly(keypair.pubkey(), false), // Mint Authority (Not a signer, not writable)
             solana_sdk::instruction::AccountMeta::new_readonly(TOKEN_PROGRAM_ID, false), // Token Program
@@ -257,14 +260,13 @@ async fn send_transaction(
     signers: &[&Keypair],
 ) -> Result<(), Box<dyn std::error::Error>> {
     let recent_blockhash = client.get_latest_blockhash()?;
-
-    let mut all_signers: Vec<&Keypair> = vec![keypair];
-    all_signers.extend_from_slice(signers);
-
-    let mut transaction = Transaction::new_with_payer(&instructions, Some(&keypair.pubkey()));
-    transaction.sign(&all_signers, recent_blockhash);
-
-    let signature = client.send_and_confirm_transaction(&transaction)?;
+    let tx = Transaction::new_signed_with_payer(
+        &instructions,
+        Some(&keypair.pubkey()),
+        &signers.iter().chain(std::iter::once(&keypair)).copied().collect::<Vec<_>>(),
+        recent_blockhash,
+    );
+    let signature = client.send_and_confirm_transaction(&tx)?;
     println!("Transaction signature: {}", signature);
     Ok(())
 }

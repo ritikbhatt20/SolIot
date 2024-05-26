@@ -4,5 +4,5 @@ export const REGISTRY_SEED = "registry";
 export const NODE_SEED = "node";
 
 export const PROGRAM_ID = new PublicKey(            
-    "9MnKKfAhgYyWJXHuYTBDUWLvM5fRLnS9QFMx1A6XBRWR"    
+    "6U3BghDt9GVAhQ5VEpGVe48KoJQU3G5ZixZyFR1ioKnx"    
 );                                                      
