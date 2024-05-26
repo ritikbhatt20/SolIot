@@ -11,17 +11,22 @@ import {
 } from "@solana/wallet-adapter-wallets";
 import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
 import Header from "../components/Header";
-import style from "../styles/Home.module.css";
+// import style from "../styles/Home.module.css";
 import "@solana/wallet-adapter-react-ui/styles.css";
 import { AppProvider } from "../context/context";
 import InitializeRegistry from "../components/InitializeRegistry";
 import RegisterNode from "../components/RegisterNode";
 import UpdateNode from "../components/UpdateNode";
 import NodeStatusDetails from "../components/NodeStatusDetails";
+import { clusterApiUrl } from "@solana/web3.js";
+// import "../styles/globals.css";
 
 export default function Home() {
-  const endpoint =
-    "https://fluent-little-sun.solana-devnet.quiknode.pro/371c43da2c0c0ea39a2d68d940b83d1c7a0a05b5/";
+  // The network can be set to 'devnet', 'testnet', or 'mainnet-beta'.
+  const network = WalletAdapterNetwork.Devnet;
+
+  // You can also provide a custom RPC endpoint.
+  const endpoint = useMemo(() => clusterApiUrl(network), [network]);
 
   const wallets = useMemo(
     () => [
@@ -37,12 +42,14 @@ export default function Home() {
       <WalletProvider wallets={wallets} autoConnect={true}>
         <WalletModalProvider>
           <AppProvider>
-            <Header />
-            <div className={style.container}>
+            <div className="min-h-screen bg-slate-800">
+              <Header />
+              {/* <div> */}
               {/* <InitializeRegistry />  */}
               {/* <RegisterNode/> */}
               {/* <UpdateNode/> */}
-              <NodeStatusDetails/>
+              <NodeStatusDetails />
+              {/* </div> */}
             </div>
           </AppProvider>
         </WalletModalProvider>
