@@ -6,7 +6,7 @@ mod error;
 
 use crate::error::*;
 
-declare_id!("RCw9Jvc35yuko59KzBtmSfRkZrd6aPWzioEyioXyqmk");
+declare_id!("3mgBjeppjDsFkRfDzqM2hHEJbeu5ddjFghH9mqdwNgs8");
 
 #[program]
 pub mod iot_devices {
@@ -79,6 +79,17 @@ pub mod iot_devices {
             // Update token earnings
             node.token_earnings += 1;
         }
+        Ok(())
+    }
+    pub fn unregister(ctx: Context<Unregister>) -> Result<()> {
+        let registry = &mut ctx.accounts.registry;
+
+        // Remove the node from the registry
+        registry.nodes.retain(|&key| key != *ctx.accounts.node.to_account_info().key);
+
+        // Close the node account
+        let node = &mut ctx.accounts.node;
+        node.close(ctx.accounts.authority.to_account_info())?;
 
         Ok(())
     }
@@ -125,6 +136,16 @@ pub struct Update<'info> {
     #[account(mut)]
     pub mint_authority: AccountInfo<'info>,
     pub token_program: Program<'info, Token>,
+}
+
+#[derive(Accounts)]
+pub struct Unregister<'info> {
+    #[account(mut, has_one = authority, close = authority, seeds = [b"node", authority.key().as_ref()], bump)]
+    pub node: Account<'info, NodeStatus>,
+    #[account(mut)]
+    pub authority: Signer<'info>,
+    #[account(mut, seeds = [b"registry"], bump)]
+    pub registry: Account<'info, Registry>,
 }
 
 #[account]

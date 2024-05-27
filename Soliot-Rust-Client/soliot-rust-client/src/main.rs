@@ -72,6 +72,17 @@ async fn main() {
         if let Err(e) = update_node(&client, &keypair, uptime, heartbeat, bytes, program_id, token_mint_address).await {
             eprintln!("Failed to update node: {:?}", e);
         }
+
+        println!("Do you want to unregister the node? (yes/no):");
+        let mut input = String::new();
+        io::stdin().read_line(&mut input).expect("Failed to read line");
+        if input.trim().to_lowercase() == "yes" {
+            if let Err(e) = unregister_node(&client, &keypair, program_id).await {
+                eprintln!("Failed to unregister node: {:?}", e);
+            }
+            break;
+        }
+        
         sleep(Duration::from_secs(600)).await;
     }
 }
@@ -250,6 +261,29 @@ async fn update_node(
 
     send_transaction(client, keypair, vec![instruction], &[]).await?;
     println!("Node updated with uptime: {}, heartbeat: {}, bytes: {}", uptime, heartbeat, bytes);
+    Ok(())
+}
+
+async fn unregister_node(client: &RpcClient, keypair: &Keypair, program_id: Pubkey) -> Result<(), Box<dyn std::error::Error>> {
+    let (node_pda, _node_bump) = Pubkey::find_program_address(&[NODE_SEED, keypair.pubkey().as_ref()], &program_id);
+
+    let (registry_pda, _registry_bump) = Pubkey::find_program_address(&[REGISTRY_SEED], &program_id);
+
+    let mut data = Vec::new();
+    data.extend_from_slice(&get_discriminator("unregister"));
+
+    let instruction = Instruction {
+        program_id,
+        accounts: vec![
+            solana_sdk::instruction::AccountMeta::new(node_pda, false),
+            solana_sdk::instruction::AccountMeta::new(keypair.pubkey(), true),
+            solana_sdk::instruction::AccountMeta::new(registry_pda, false),
+        ],
+        data,
+    };
+
+    send_transaction(client, keypair, vec![instruction], &[]).await?;
+    println!("Node unregistered");
     Ok(())
 }
 
