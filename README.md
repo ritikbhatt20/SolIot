@@ -109,6 +109,8 @@ This project allows users to manage IoT nodes using the Solana blockchain. It in
 3. **Update a Node**:
    Use the Next.js application to update node details such as uptime, heartbeat, and bytes.
 
+## Unregister Node
+
 4. **Unregister a node**:
    Use the Next.js application to unregister a node by providing the node details.
    
