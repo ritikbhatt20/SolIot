@@ -15,12 +15,13 @@ This project enables the management of IoT nodes using the Solana blockchain. It
   - [Initialize Registry](#initialize-registry)
   - [Register Node](#register-node)
   - [Update Node](#update-node)
+  - [Unregister Node](#unregister-node)
 - [Project Structure](#project-structure)
 - [License](#license)
 
 ## Introduction
 
-This project allows users to manage IoT nodes using the Solana blockchain. It involves deploying a smart contract to handle node registration and updates, a Rust client to interact with the smart contract, and a Next.js application for front-end interaction.
+This project allows users to manage IoT nodes using the Solana blockchain. It involves deploying a smart contract to handle node registration, updates, and unregistration, a Rust client to interact with the smart contract, and a Next.js application for front-end interaction.
 
 ## Architecture
 
@@ -107,6 +108,9 @@ This project allows users to manage IoT nodes using the Solana blockchain. It in
 
 3. **Update a Node**:
    Use the Next.js application to update node details such as uptime, heartbeat, and bytes.
+
+4. **Unregister a node**:
+   Use the Next.js application to unregister a node by providing the node details.
    
 ### Project Structure
 
