@@ -17,6 +17,7 @@ use std::path::Path;
 use sha2::{Sha256, Digest};
 use std::io;
 use std::env;
+use tokio::time::{sleep, Duration};
 
 const REGISTRY_SEED: &[u8] = b"registry";
 const NODE_SEED: &[u8] = b"node";
@@ -90,6 +91,33 @@ async fn main() {
             let bytes: u64 = sub_m.value_of("bytes").unwrap().parse().expect("Invalid bytes");
             if let Err(e) = update_node(&client, &keypair, uptime, heartbeat, bytes, program_id, token_mint_address).await {
                 eprintln!("Failed to update node: {:?}", e);
+            }
+            sleep(Duration::from_secs(600)).await;
+            loop {
+                println!("Enter uptime:");
+                let uptime = read_u64();
+        
+                println!("Enter heartbeat:");
+                let heartbeat = read_u64();
+        
+                println!("Enter bytes:");
+                let bytes = read_u64();
+        
+                if let Err(e) = update_node(&client, &keypair, uptime, heartbeat, bytes, program_id, token_mint_address).await {
+                    eprintln!("Failed to update node: {:?}", e);
+                }
+                
+                // println!("Do you want to unregister the node? (yes/no):");
+                // let mut input = String::new();
+                // io::stdin().read_line(&mut input).expect("Failed to read line");
+                // if input.trim().to_lowercase() == "yes" {
+                //     if let Err(e) = unregister_node(&client, &keypair, program_id).await {
+                //         eprintln!("Failed to unregister node: {:?}", e);
+                //     }
+                //     break;
+                // }
+                
+                sleep(Duration::from_secs(600)).await;
             }
         },
         Some(("unregister", _)) => {
