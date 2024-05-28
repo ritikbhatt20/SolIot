@@ -129,26 +129,26 @@ async fn main() {
     }
 }
 
-async fn check_node_registration(client: &RpcClient, keypair: &Keypair, program_id: Pubkey) -> bool {
-    let (node_pda, _node_bump) = Pubkey::find_program_address(&[NODE_SEED, keypair.pubkey().as_ref()], &program_id);
-    client.get_account(&node_pda).is_ok()
-}
+// async fn check_node_registration(client: &RpcClient, keypair: &Keypair, program_id: Pubkey) -> bool {
+//     let (node_pda, _node_bump) = Pubkey::find_program_address(&[NODE_SEED, keypair.pubkey().as_ref()], &program_id);
+//     client.get_account(&node_pda).is_ok()
+// }
 
-fn read_ip() -> [u8; 4] {
-    loop {
-        let mut input = String::new();
-        io::stdin().read_line(&mut input).expect("Failed to read line");
-        let parts: Vec<&str> = input.trim().split('.').collect();
-        if parts.len() == 4 {
-            if let Ok(ip) = parts.iter().map(|&part| part.parse::<u8>()).collect::<Result<Vec<u8>, _>>() {
-                if ip.len() == 4 {
-                    return [ip[0], ip[1], ip[2], ip[3]];
-                }
-            }
-        }
-        println!("Invalid IP address format. Please enter in the format x.x.x.x:");
-    }
-}
+// fn read_ip() -> [u8; 4] {
+//     loop {
+//         let mut input = String::new();
+//         io::stdin().read_line(&mut input).expect("Failed to read line");
+//         let parts: Vec<&str> = input.trim().split('.').collect();
+//         if parts.len() == 4 {
+//             if let Ok(ip) = parts.iter().map(|&part| part.parse::<u8>()).collect::<Result<Vec<u8>, _>>() {
+//                 if ip.len() == 4 {
+//                     return [ip[0], ip[1], ip[2], ip[3]];
+//                 }
+//             }
+//         }
+//         println!("Invalid IP address format. Please enter in the format x.x.x.x:");
+//     }
+// }
 
 fn read_u64() -> u64 {
     loop {
