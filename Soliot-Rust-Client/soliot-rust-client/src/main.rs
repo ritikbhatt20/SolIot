@@ -1,5 +1,5 @@
+use clap::{App, Arg, SubCommand};
 use dotenv::dotenv;
-use std::env;
 use solana_client::rpc_client::RpcClient;
 use solana_sdk::{
     instruction::Instruction,
@@ -12,11 +12,11 @@ use spl_associated_token_account::{
     instruction::create_associated_token_account,
 };
 use spl_token::ID as TOKEN_PROGRAM_ID;
-use tokio::time::{sleep, Duration};
 use std::str::FromStr;
 use std::path::Path;
 use sha2::{Sha256, Digest};
 use std::io;
+use std::env;
 
 const REGISTRY_SEED: &[u8] = b"registry";
 const NODE_SEED: &[u8] = b"node";
@@ -24,6 +24,35 @@ const NODE_SEED: &[u8] = b"node";
 #[tokio::main]
 async fn main() {
     dotenv().ok();  // Load environment variables from .env file
+
+    let matches = App::new("IoT Nodes Management on Solana")
+        .version("1.1")
+        .about("Manage IoT nodes using the Solana blockchain")
+        .subcommand(SubCommand::with_name("initialize")
+            .about("Initializes the registry"))
+        .subcommand(SubCommand::with_name("register")
+            .about("Registers a new node")
+            .arg(Arg::with_name("ip")
+                .help("IP address of the node")
+                .required(true)
+                .index(1)))
+        .subcommand(SubCommand::with_name("update")
+            .about("Updates the node status")
+            .arg(Arg::with_name("uptime")
+                .help("Uptime of the node")
+                .required(true)
+                .index(1))
+            .arg(Arg::with_name("heartbeat")
+                .help("Heartbeat of the node")
+                .required(true)
+                .index(2))
+            .arg(Arg::with_name("bytes")
+                .help("Bytes processed by the node")
+                .required(true)
+                .index(3)))
+        .subcommand(SubCommand::with_name("unregister")
+            .about("Unregisters the node"))
+        .get_matches();
 
     let rpc_url = env::var("RPC_URL").expect("RPC_URL must be set");
     let client = RpcClient::new(rpc_url);
@@ -38,52 +67,37 @@ async fn main() {
 
     let program_id_str = env::var("PROGRAM_ID").expect("PROGRAM_ID must be set");
     let program_id = Pubkey::from_str(&program_id_str).expect("Invalid PROGRAM_ID");
-    
+
     let token_mint_address_str = env::var("TOKEN_MINT_ADDRESS").expect("TOKEN_MINT_ADDRESS must be set");
     let token_mint_address = Pubkey::from_str(&token_mint_address_str).expect("Invalid TOKEN_MINT_ADDRESS");
 
-    if let Err(e) = initialize_registry_if_needed(&client, &keypair, &mint_authority, program_id, token_mint_address).await {
-        eprintln!("Failed to initialize registry: {:?}", e);
-    }
-
-    let node_registered = check_node_registration(&client, &keypair, program_id).await;
-
-    if !node_registered {
-        println!("Enter the IP address (format: x.x.x.x):");
-        let ip = read_ip();
-
-        if let Err(e) = register_node_if_needed(&client, &keypair, ip, program_id, token_mint_address).await {
-            eprintln!("Failed to register node: {:?}", e);
-        }
-    } else {
-        println!("Node already registered");
-    }
-
-    loop {
-        println!("Enter uptime:");
-        let uptime = read_u64();
-
-        println!("Enter heartbeat:");
-        let heartbeat = read_u64();
-
-        println!("Enter bytes:");
-        let bytes = read_u64();
-
-        if let Err(e) = update_node(&client, &keypair, uptime, heartbeat, bytes, program_id, token_mint_address).await {
-            eprintln!("Failed to update node: {:?}", e);
-        }
-
-        println!("Do you want to unregister the node? (yes/no):");
-        let mut input = String::new();
-        io::stdin().read_line(&mut input).expect("Failed to read line");
-        if input.trim().to_lowercase() == "yes" {
+    match matches.subcommand() {
+        Some(("initialize", _)) => {
+            if let Err(e) = initialize_registry_if_needed(&client, &keypair, &mint_authority, program_id, token_mint_address).await {
+                eprintln!("Failed to initialize registry: {:?}", e);
+            }
+        },
+        Some(("register", sub_m)) => {
+            let ip_str = sub_m.value_of("ip").unwrap();
+            let ip = parse_ip(ip_str).expect("Invalid IP address format");
+            if let Err(e) = register_node_if_needed(&client, &keypair, ip, program_id, token_mint_address).await {
+                eprintln!("Failed to register node: {:?}", e);
+            }
+        },
+        Some(("update", sub_m)) => {
+            let uptime: u64 = sub_m.value_of("uptime").unwrap().parse().expect("Invalid uptime");
+            let heartbeat: u64 = sub_m.value_of("heartbeat").unwrap().parse().expect("Invalid heartbeat");
+            let bytes: u64 = sub_m.value_of("bytes").unwrap().parse().expect("Invalid bytes");
+            if let Err(e) = update_node(&client, &keypair, uptime, heartbeat, bytes, program_id, token_mint_address).await {
+                eprintln!("Failed to update node: {:?}", e);
+            }
+        },
+        Some(("unregister", _)) => {
             if let Err(e) = unregister_node(&client, &keypair, program_id).await {
                 eprintln!("Failed to unregister node: {:?}", e);
             }
-            break;
-        }
-        
-        sleep(Duration::from_secs(600)).await;
+        },
+        _ => println!("Invalid subcommand"),
     }
 }
 
@@ -303,4 +317,16 @@ async fn send_transaction(
     let signature = client.send_and_confirm_transaction(&tx)?;
     println!("Transaction signature: {}", signature);
     Ok(())
+}
+
+fn parse_ip(ip_str: &str) -> Option<[u8; 4]> {
+    let parts: Vec<&str> = ip_str.split('.').collect();
+    if parts.len() == 4 {
+        if let Ok(ip) = parts.iter().map(|&part| part.parse::<u8>()).collect::<Result<Vec<u8>, _>>() {
+            if ip.len() == 4 {
+                return Some([ip[0], ip[1], ip[2], ip[3]]);
+            }
+        }
+    }
+    None
 }

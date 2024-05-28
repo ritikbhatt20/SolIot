@@ -3975,6 +3975,7 @@ version = "0.1.0"
 dependencies = [
  "anchor-lang",
  "borsh 0.9.3",
+ "clap 3.2.25",
  "dotenv",
  "serde",
  "serde_json",

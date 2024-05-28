@@ -82,13 +82,13 @@ pub mod iot_devices {
         Ok(())
     }
     pub fn unregister(ctx: Context<Unregister>) -> Result<()> {
-        let registry = &mut ctx.accounts.registry;
+        let registry = &mut ctx.accounts.registry;      
 
         // Remove the node from the registry
         registry.nodes.retain(|&key| key != *ctx.accounts.node.to_account_info().key);
 
         // Close the node account
-        let node = &mut ctx.accounts.node;
+        let node = &mut ctx.accounts.node;                  
         node.close(ctx.accounts.authority.to_account_info())?;
 
         Ok(())
