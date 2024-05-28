@@ -15,27 +15,28 @@ This project enables the management of IoT nodes using the Solana blockchain. It
   - [Initialize Registry](#initialize-registry)
   - [Register Node](#register-node)
   - [Update Node](#update-node)
+  - [Unregister Node](#unregister-node)
 - [Project Structure](#project-structure)
 - [License](#license)
 
 ## Introduction
 
-This project allows users to manage IoT nodes using the Solana blockchain. It involves deploying a smart contract to handle node registration and updates, a Rust client to interact with the smart contract, and a Next.js application for front-end interaction.
+This project allows users to manage IoT nodes using the Solana blockchain. It involves deploying a smart contract to handle node registration, updates, and unregistration, a Rust client to interact with the smart contract, and a Next.js application for front-end interaction. The smart contract ensures decentralized and secure management of IoT nodes, providing a transparent and tamper-proof system for tracking node status and interactions.
 
 ## Architecture
 
-1. **Solana Smart Contract (Program)**: Written in Rust, deployed on the Solana blockchain.
-2. **Rust Client**: Interacts with the deployed smart contract.
-3. **Next.js Application**: User interface for managing the IoT nodes.
+1. **Solana Smart Contract (Program)**: Written in Rust, deployed on the Solana blockchain, the smart contract manages the registry of IoT nodes, allowing for operations such as initialization, registration, updating, and unregistration.
+2. **Rust Client**: A command-line interface (CLI) tool written in Rust that interacts with the deployed smart contract. It provides functionality to initialize the registry, register nodes, update node status, and unregister nodes.
+3. **Next.js Application**: A web application that offers a user-friendly interface for managing IoT nodes. It allows users to perform actions such as initializing the registry, registering nodes, updating node status, and unregistering nodes through a graphical interface.
 
 ## Prerequisites
 
-- Node.js (v14 or higher)
-- Rust and Cargo
-- Solana CLI
-- Anchor CLI
-- Yarn or npm
-- Solana-compatible wallet (e.g., Phantom Wallet)
+- **Node.js (v14 or higher)**
+- **Rust and Cargo**: The Rust programming language and its package manager, Cargo.
+- **Solana CLI**: Command-line interface tools for interacting with the Solana blockchain.
+- **Anchor CLI**: A framework for Solana smart contract development.
+- **Yarn or npm**: Package managers for JavaScript.
+- **Solana-compatible wallet (e.g., Phantom Wallet)**: Such as Phantom Wallet, used for interacting with the Solana blockchain and managing keys.
 
 ## Installation
 
@@ -55,7 +56,7 @@ This project allows users to manage IoT nodes using the Solana blockchain. It in
     anchor build
     anchor deploy
 3. **Obtain Program ID**:
-    The deployment step will output the Program ID. Copy this ID to use in your client and front-end code.
+    After deploying the smart contract, the deployment step will output the Program ID. Copy this ID to use in your Rust client and Next.js application configurations.
 
 ### Rust Client
 
@@ -66,9 +67,9 @@ This project allows users to manage IoT nodes using the Solana blockchain. It in
     cargo build
 
 2. **Configure the Rust Client**:
-    Update the keypair path of your wallet and mint authority, and Program ID.
-
-3. **Run the Rust Client code**:
+    Update the .env file with the path to your wallet keypair, the mint authority, and the Program ID obtained from the smart contract deployment.
+   
+4. **Run the Rust Client code**:
    ```sh
    cargo run
 
@@ -96,17 +97,22 @@ This project allows users to manage IoT nodes using the Solana blockchain. It in
 ## Initialize Registry
 
 1. **Initialize the Registry**:
-   Use the Next.js application to initialize the registry by clicking on the "Initialize Registry" button.
+   Use the Next.js application to initialize the registry by clicking on the "Initialize Registry" button. This action creates a registry account on the Solana blockchain, which will store information         about the registered IoT nodes.
 
 ## Register Node
 
 2. **Register a Node**:
-   Use the Next.js application to register a new node by providing the necessary details such as IP address.
+   Use the Next.js application to register a new node by providing the necessary details, such as the node's IP address. This action creates a new node account and adds it to the registry.
    
 ## Update Node
 
 3. **Update a Node**:
-   Use the Next.js application to update node details such as uptime, heartbeat, and bytes.
+   Use the Next.js application to update the node details such as uptime, heartbeat, and bytes. This action records the current status of the node on the blockchain, ensuring a reliable and tamper-proof       log of node activity.
+
+## Unregister Node
+
+4. **Unregister a node**:
+   Use the Next.js application to unregister a node by providing the node's details. This action removes the node from the registry and closes the node's account.
    
 ### Project Structure
 
