@@ -99,20 +99,32 @@ This project allows users to manage IoT nodes using the Solana blockchain. It in
 1. **Initialize the Registry**:
    Use the Next.js application to initialize the registry by clicking on the "Initialize Registry" button. This action creates a registry account on the Solana blockchain, which will store information         about the registered IoT nodes.
 
+   ```sh
+   cargo run -- initialize
+
 ## Register Node
 
 2. **Register a Node**:
    Use the Next.js application to register a new node by providing the necessary details, such as the node's IP address. This action creates a new node account and adds it to the registry.
+
+    ```sh
+    cargo run -- register <ip>
    
 ## Update Node
 
 3. **Update a Node**:
    Use the Next.js application to update the node details such as uptime, heartbeat, and bytes. This action records the current status of the node on the blockchain, ensuring a reliable and tamper-proof       log of node activity.
 
+   ```sh
+   cargo run -- update <uptime> <heartbeats> <bytes>
+
 ## Unregister Node
 
 4. **Unregister a node**:
    Use the Next.js application to unregister a node by providing the node's details. This action removes the node from the registry and closes the node's account.
+
+   ```sh
+   cargo run -- unregister
    
 ### Project Structure
 
