@@ -1192,8 +1192,11 @@ version = "0.1.0"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
+ "atty",
  "bumpalo",
+ "getrandom 0.1.16",
  "solana-program",
+ "termcolor",
 ]
 
 [[package]]

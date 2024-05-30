@@ -190,7 +190,7 @@ async fn initialize_registry_if_needed(client: &RpcClient, keypair: &Keypair, _m
             solana_sdk::instruction::AccountMeta::new(keypair.pubkey(), true),
             solana_sdk::instruction::AccountMeta::new_readonly(token_mint_address, false),
             solana_sdk::instruction::AccountMeta::new_readonly(solana_sdk::system_program::id(), false),
-            solana_sdk::instruction::AccountMeta::new_readonly(spl_token::id(), false),
+            solana_sdk::instruction::AccountMeta::new_readonly(TOKEN_PROGRAM_ID, false),
             solana_sdk::instruction::AccountMeta::new_readonly(rent_pubkey, false),
         ],
         data,
